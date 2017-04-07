@@ -73,7 +73,7 @@
 [submodule "meta-gateway"]
 	path = layers/meta-gateway
 	url = ../meta-gateway
-	branch = master
+	branch = pulsar-8
 [submodule "vendor-proprietary"]
 	path = layers/vendor-proprietary
 	url = ../vendor-proprietary
@@ -109,7 +109,7 @@
 [submodule "layers/meta-secure-env"]
 	path = layers/meta-secure-env
 	url = ../meta-secure-env
-	branch = master
+	branch = pulsar-8
 [submodule "layers/meta-measured"]
 	path = layers/meta-measured
 	url = ../meta-measured
@@ -122,3 +122,7 @@
 	path = layers/meta-java
 	url = ../meta-java
 	branch = wr-8.0-20151119
+[submodule "meta-ima"]
+	path = layers/meta-ima
+	url = ../meta-ima
+	branch = pulsar-8

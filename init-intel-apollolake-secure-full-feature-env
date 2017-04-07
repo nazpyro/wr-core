@@ -34,7 +34,7 @@ fi
 
 # Figure out the "TOP" relative to TOP/layers/oe-core
 THIS_SCRIPT=`dirname $OEROOT`
-THIS_SCRIPT=$THIS_SCRIPT/init-intel-x86-env
+THIS_SCRIPT=$THIS_SCRIPT/init-intel-apollolake-env
 
 if [ -z "$ZSH_NAME" ] && [ "$0" = "$THIS_SCRIPT" -o "$0" = init-intel-x86-env ]; then
    echo "Error: This script needs to be sourced. Please run as '. $THIS_SCRIPT'"
@@ -49,20 +49,32 @@ export TEMPLATECONF
 
 S_ARGS="$@"
 if [ "$S_ARGS" = "" ] ; then
-   S_ARGS=build-intel-x86
+   S_ARGS=build-intel-apollolake
 fi
+unset CONFIG_UPDATED
 
 . $OEROOT/scripts/oe-buildenv-internal "$S_ARGS" $OEROOT/../bitbake && \
      $OEROOT/scripts/oe-setup-builddir && \
      [ -n "$BUILDDIR" ] && cd $BUILDDIR
 if [ $? = 0 ] ; then
    if [ ! -e .configured ] ; then
+      CONFIG_UPDATED=1
+      CUSTOM_LAYERS=""
+      # Add custom layers if they exist
+      if [ -d $OEROOT/../../../custom-layers ] ; then
+	  for e in `ls $OEROOT/../../../custom-layers/*/conf/layer.conf $OEROOT/../../../custom-layers/*/*/conf/layer.conf $OEROOT/../../../custom-layers/*/*/*/conf/layer.conf 2> /dev/null`; do
+	      cust_layer="${e%/conf/layer.conf}"
+	      CUSTOM_LAYERS="$CUSTOM_LAYERS ${cust_layer#$OEROOT/../}"
+	  done
+      fi
       perl -p -i -e 's#BBLAYERS \?=#BBLAYERS =#' conf/bblayers.conf
-
-      	   for e in wrlabs-integration \
+          for e in $CUSTOM_LAYERS wrlabs-integration \
+	       meta-secure-env \
+	       meta-measured \
+	       meta-ima \
 	       wr-kernel \
 	       meta-intel \
-	       meta-intel/meta-isg/meta-valleyisland \
+	       intel-apollolake \
 	       meta-gateway \
 	       wr-base \
 	       wr-fixes \
@@ -103,9 +115,9 @@ COMPATIBLE_MACHINE_intel-corei7-64 = "${MACHINE}"
 # Set default machine to select in the hob interface
 HOB_MACHINE = "intel-corei7-64"
 DEFAULT_IMAGE = "wrlinux-image-glibc-small"
-LINUX_KERNEL_TYPE = "preempt-rt"
-PREFERRED_PROVIDER_virtual/kernel_intel-corei7-64 = "linux-yocto-rt"
-KTYPE_ENABLED = "preempt-rt"
+LINUX_KERNEL_TYPE = "standard"
+PREFERRED_PROVIDER_virtual/kernel_intel-corei7-64 = "linux-yocto"
+KTYPE_ENABLED = "standard"
 PACKAGE_CLASSES = "package_rpm"
 # Activate systemd
 VIRTUAL-RUNTIME_init_manager = " systemd "
@@ -113,6 +125,7 @@ VIRTUAL-RUNTIME_syslog = "sysklogd"
 DISTRO_FEATURES_append = " systemd x11 opengl"
 DISTRO_FEATURES_BACKFILL_CONSIDERED += " sysvinit "
 KERNEL_FEATURES_append = " cfg/systemd.scc"
+BSP_SUBTYPE = "apollolake"
 USER_CLASSES = "buildstats buildstats-summary"
 IMAGE_FSTYPES += "tar.bz2"
 NOISO = "1"
@@ -124,15 +137,27 @@ DEFAULTTUNE_virtclass-multilib-lib32 = "x86"
 
 EXTRA_IMAGEDEPENDS += "\${@base_contains('INCOMPATIBLE_LICENSE', 'GPLv3', '', 'grub-efi', d)}"
 
-SERIAL_CONSOLES_intel-corei7-64 = "\${@bb.utils.contains('KERNEL_FEATURES', 'leafhill', '115200;ttyS2', '115200;ttyS0', d)}"
-SERIAL_CONSOLES_CHECK_intel-corei7-64 = "\${@bb.utils.contains('KERNEL_FEATURES', 'leafhill', 'ttyS2', 'ttyS0', d)}"
+SERIAL_CONSOLES_intel-corei7-64 = "\${@bb.utils.contains('BSP_SUBTYPE', 'apollolake', '115200;ttyS2', '115200;ttyS0', d)}"
+SERIAL_CONSOLES_CHECK_intel-corei7-64 = "\${@bb.utils.contains('BSP_SUBTYPE', 'apollolake', 'ttyS2', 'ttyS0', d)}"
 
 ## Included feature templates
 require $OEROOT/../wr-kernel/templates/default/template.conf
 require $OEROOT/../wr-base/templates/default/template.conf
+require $OEROOT/../meta-secure-env/templates/default/template.conf
+require $OEROOT/../meta-secure-env/templates/feature/mok-secure-boot/template.conf
+require $OEROOT/../meta-secure-env/templates/feature/storage-encryption/template.conf
+require $OEROOT/../meta-secure-env/templates/feature/ima/template.conf
+require $OEROOT/../intel-apollolake/templates/default/template.conf
 require $OEROOT/../meta-gateway/templates/default/template.conf
 require $OEROOT/../wrlabs-integration/templates/default/template.conf
+EOF
 
+# Process any custom content overrides
+if [ -f $OEROOT/../../../default/template.conf ] ; then
+    echo "require $OEROOT/../../../default/template.conf" >> conf/local.conf
+fi
+
+cat<<EOF>>conf/local.conf
 # Kernel overrides
 INHERIT += "blacklist"
 PNBLACKLIST[linux-windriver] = "Recipe not buildable without local kernel git"

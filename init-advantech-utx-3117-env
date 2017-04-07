@@ -74,6 +74,7 @@ if [ $? = 0 ] ; then
 	       pulsar \
 	       meta-overc/meta-cube \
 	       meta-cloud-services \
+	       meta-cloud-services/meta-openstack \
                meta-browser \
 	       meta-security \
                meta-openembedded/meta-initramfs \
@@ -132,22 +133,14 @@ SERIAL_CONSOLES_intel-corei7-64 = "\${@bb.utils.contains('BSP_SUBTYPE', 'apollol
 SERIAL_CONSOLES_CHECK_intel-corei7-64 = "\${@bb.utils.contains('BSP_SUBTYPE', 'apollolake', 'ttyS0', 'ttyS1', d)}"
 
 ## Included feature templates
-require `pwd`/../layers/wr-kernel/templates/default/template.conf
-require `pwd`/../layers/wr-base/templates/default/template.conf
-require `pwd`/../layers/wrlabs-integration/templates/default/template.conf
-require `pwd`/../layers/meta-secure-env/templates/default/template.conf
-require `pwd`/../layers/meta-secure-env/templates/feature/uefi-secure-boot/template.conf
-require `pwd`/../layers/meta-secure-env/templates/feature/mok-secure-boot/template.conf
-require `pwd`/../layers/intel-apollolake/templates/default/template.conf
-require `pwd`/../layers/meta-gateway/templates/default/template.conf
-require `pwd`/../layers/meta-secure-env/templates/feature/tpm/template.conf
-require `pwd`/../layers/meta-secure-env/templates/feature/tpm2/template.conf
-
-CUBE_ESSENTIAL_EXTRA_INSTALL += "\
-    packagegroup-uefi-secure-boot \
-    packagegroup-mok-secure-boot \
-    packagegroup-tpm \
-"
+require $OEROOT/../wr-kernel/templates/default/template.conf
+require $OEROOT/../wr-base/templates/default/template.conf
+require $OEROOT/../wrlabs-integration/templates/default/template.conf
+require $OEROOT/../meta-secure-env/templates/default/template.conf
+require $OEROOT/../meta-secure-env/templates/feature/mok-secure-boot/template.conf
+require $OEROOT/../intel-apollolake/templates/default/template.conf
+require $OEROOT/../meta-gateway/templates/default/template.conf
+require $OEROOT/../meta-secure-env/templates/feature/tpm2/template.conf
 
 # Kernel overrides
 INHERIT += "blacklist"
@@ -170,12 +163,11 @@ PULSAR_UNATTENDED_UPGRADE = "true"
 
 PNWHITELIST_LAYERS_forcevariable = ""
 
-INHERIT += "packagefeed-stability"
-
 PREMIRRORS_append := "\\
-    http://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
-    https://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
-    hg://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
+    http://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    https://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    hg://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    git://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
 "
 
 # Possible provider: cacao-initial-native and jamvm-initial-native
@@ -191,6 +183,28 @@ PREFERRED_PROVIDER_java2-runtime = "openjre-8"
 
 CUBE_DOM_GW_EXTRA_INSTALL += "\
     openjre-8 \
+    gps-utils \
+    gpsd \
+    qpid \
+    qpid-python \
+    libmodbus \
+    nodejs \
+    mosquitto \
+    iasl \
+    subversion \
+    conntrack-tools \
+    fuse \
+    igmpproxy \
+    iperf \
+    ipset \
+    libcli \
+    umip \
+    ruby \
+    ntfsprogs \
+    ntfs-3g \
+    sshfs-fuse \
+    tftp-hpa \ 
+    tftp-hpa-server \
 "
 
 EOF

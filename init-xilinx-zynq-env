@@ -113,9 +113,9 @@ NOISO = "1"
 IMAGE_FSTYPES += "ext3"
 
 ## Included feature templates
-require `pwd`/../layers/wr-kernel/templates/default/template.conf
-require `pwd`/../layers/wr-base/templates/default/template.conf
-require `pwd`/../layers/wrlabs-integration/templates/default/template.conf
+require $OEROOT/../wr-kernel/templates/default/template.conf
+require $OEROOT/../wr-base/templates/default/template.conf
+require $OEROOT/../wrlabs-integration/templates/default/template.conf
 
 # Kernel overrides
 INHERIT += "blacklist"
@@ -138,12 +138,11 @@ PULSAR_UNATTENDED_UPGRADE = "true"
 
 PNWHITELIST_LAYERS_forcevariable = ""
 
-INHERIT += "packagefeed-stability"
-
 PREMIRRORS_append := "\\
-    http://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
-    https://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
-    hg://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
+    http://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    https://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    hg://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    git://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
 "
 
 EOF

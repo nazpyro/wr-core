@@ -51,15 +51,24 @@ S_ARGS="$@"
 if [ "$S_ARGS" = "" ] ; then
    S_ARGS=build-intel-apollolake
 fi
+unset CONFIG_UPDATED
 
 . $OEROOT/scripts/oe-buildenv-internal "$S_ARGS" $OEROOT/../bitbake && \
      $OEROOT/scripts/oe-setup-builddir && \
      [ -n "$BUILDDIR" ] && cd $BUILDDIR
 if [ $? = 0 ] ; then
    if [ ! -e .configured ] ; then
+      CONFIG_UPDATED=1
+      CUSTOM_LAYERS=""
+      # Add custom layers if they exist
+      if [ -d $OEROOT/../../../custom-layers ] ; then
+	  for e in `ls $OEROOT/../../../custom-layers/*/conf/layer.conf $OEROOT/../../../custom-layers/*/*/conf/layer.conf $OEROOT/../../../custom-layers/*/*/*/conf/layer.conf 2> /dev/null`; do
+	      cust_layer="${e%/conf/layer.conf}"
+	      CUSTOM_LAYERS="$CUSTOM_LAYERS ${cust_layer#$OEROOT/../}"
+	  done
+      fi
       perl -p -i -e 's#BBLAYERS \?=#BBLAYERS =#' conf/bblayers.conf
-
-      	   for e in wrlabs-integration \
+          for e in $CUSTOM_LAYERS wrlabs-integration \
 	       meta-secure-env \
 	       meta-measured \
 	       wr-kernel \
@@ -131,23 +140,22 @@ SERIAL_CONSOLES_intel-corei7-64 = "\${@bb.utils.contains('BSP_SUBTYPE', 'apollol
 SERIAL_CONSOLES_CHECK_intel-corei7-64 = "\${@bb.utils.contains('BSP_SUBTYPE', 'apollolake', 'ttyS2', 'ttyS0', d)}"
 
 ## Included feature templates
-require `pwd`/../layers/wr-kernel/templates/default/template.conf
-require `pwd`/../layers/wr-base/templates/default/template.conf
-require `pwd`/../layers/wrlabs-integration/templates/default/template.conf
-require `pwd`/../layers/meta-secure-env/templates/default/template.conf
-require `pwd`/../layers/meta-secure-env/templates/feature/uefi-secure-boot/template.conf
-require `pwd`/../layers/meta-secure-env/templates/feature/mok-secure-boot/template.conf
-require `pwd`/../layers/meta-secure-env/templates/feature/tpm/template.conf
-require `pwd`/../layers/meta-secure-env/templates/feature/tpm2/template.conf
-require `pwd`/../layers/intel-apollolake/templates/default/template.conf
-require `pwd`/../layers/meta-gateway/templates/default/template.conf
+require $OEROOT/../wr-kernel/templates/default/template.conf
+require $OEROOT/../wr-base/templates/default/template.conf
+require $OEROOT/../meta-secure-env/templates/default/template.conf
+require $OEROOT/../meta-secure-env/templates/feature/mok-secure-boot/template.conf
+require $OEROOT/../meta-secure-env/templates/feature/tpm2/template.conf
+require $OEROOT/../intel-apollolake/templates/default/template.conf
+require $OEROOT/../meta-gateway/templates/default/template.conf
+require $OEROOT/../wrlabs-integration/templates/default/template.conf
+EOF
 
-CUBE_ESSENTIAL_EXTRA_INSTALL += "\
-    packagegroup-uefi-secure-boot \
-    packagegroup-mok-secure-boot \
-    packagegroup-tpm2 \
-"
+# Process any custom content overrides
+if [ -f $OEROOT/../../../default/template.conf ] ; then
+    echo "require $OEROOT/../../../default/template.conf" >> conf/local.conf
+fi
 
+cat<<EOF>>conf/local.conf
 # Kernel overrides
 INHERIT += "blacklist"
 PNBLACKLIST[linux-windriver] = "Recipe not buildable without local kernel git"
@@ -169,12 +177,11 @@ PULSAR_UNATTENDED_UPGRADE = "true"
 
 PNWHITELIST_LAYERS_forcevariable = ""
 
-INHERIT += "packagefeed-stability"
-
 PREMIRRORS_append := "\\
-    http://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
-    https://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
-    hg://.*/.* file://\${TOPDIR}/../premirrors8/ \n \\
+    http://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    https://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    hg://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
+    git://.*/.* file://${OEROOT}/../../premirrors8/ \n \\
 "
 
 EOF
